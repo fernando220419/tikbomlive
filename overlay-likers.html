@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ranking de Curtidores</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:10px;width:480px;max-width:100%;text-align:left;background:transparent;color:#fff;font-family:Arial,sans-serif;overflow:auto}.rank-list{display:flex;flex-direction:column;gap:14px}.rank-item{display:flex;align-items:center;gap:12px;min-height:40px}.rank-item.rtl{flex-direction:row-reverse;text-align:right}.rank-badge{min-width:32px;text-align:center;font-weight:800}.avatar{width:48px;height:48px;object-fit:cover;border-radius:50%;background:#555;border:2px solid #ffffff44;flex:none}.avatar-fallback{display:inline-flex;align-items:center;justify-content:center;font-size:22px}.info{min-width:0;display:flex;flex-direction:column;gap:3px}.name{font-weight:800;overflow-wrap:anywhere}.count{display:flex;align-items:center;gap:5px;font-weight:700}.rtl .count{justify-content:flex-end}.heart{display:inline-flex}.heart.animated{animation:pulseHeart 1s ease-in-out infinite}@keyframes pulseHeart{50%{transform:scale(1.3)}}.name.aurora{background:linear-gradient(105deg,#00edff,#ac7bff,#fa79b8,#6dffda,#00edff);background-size:350% 100%;background-clip:text;-webkit-background-clip:text;color:transparent!important;animation:aurora 5s linear infinite}@keyframes aurora{to{background-position:350% 0}}.name.rainbow{background:linear-gradient(90deg,red,orange,yellow,lime,cyan,blue,violet,red);background-size:250% 100%;background-clip:text;-webkit-background-clip:text;color:transparent!important;animation:aurora 5s linear infinite}.name.neon{text-shadow:0 0 5px currentColor,0 0 12px currentColor,0 0 24px currentColor!important}.name.glow{text-shadow:0 0 8px currentColor,0 0 18px currentColor,0 0 30px currentColor!important}.empty{color:#ddd;font-size:14px;padding:20px}
+</style></head><body><div class="rank-list" id="rankList"><div class="empty">Aguardando curtidas...</div></div><script>
+const API_URL=location.origin+'/api';const params=new URLSearchParams(location.search);const username=(params.get('user')||'').trim().replace(/^@/,'');const overlayId=params.get('overlay')||'';const previewMode=params.get('preview')==='1';
+const defaults={nameColor:'#0fc8e9',countColor:'#d4d4d4',rankColor:'#d9d9d9',nameSize:'24',lineSpacing:'14',letterSpacing:'0',topN:'10',font:'Arial',showAvatar:'true',showShadow:'false',shadowColor:'#000000',showPosition:'true',showLikes:'true',rightToLeft:'false',showCrown:'true',showTrophy:'true',showHeart:'true',animateHeart:'true',textEffect:'none',showBorder:'false',borderColor:'#ff1414'};
+const demoUsers=[{name:'Ana Silva',likes:12540,avatar:'https://i.pravatar.cc/150?img=47'},{name:'Carlos Lima',likes:8340,avatar:'https://i.pravatar.cc/150?img=12'},{name:'Mariana Costa',likes:5200,avatar:'https://i.pravatar.cc/150?img=44'},{name:'Pedro Alves',likes:1800,avatar:'https://i.pravatar.cc/150?img=13'},{name:'Juliana Rocha',likes:980,avatar:'https://i.pravatar.cc/150?img=49'},{name:'Rafael Souza',likes:850,avatar:'https://i.pravatar.cc/150?img=14'},{name:'Camila Martins',likes:720,avatar:'https://i.pravatar.cc/150?img=45'},{name:'Lucas Pereira',likes:620,avatar:'https://i.pravatar.cc/150?img=15'},{name:'Beatriz Santos',likes:540,avatar:'https://i.pravatar.cc/150?img=46'},{name:'Bruno Oliveira',likes:410,avatar:'https://i.pravatar.cc/150?img=11'}];
+let state={...defaults};for(const key in defaults){if(params.has(key))state[key]=params.get(key)}let lastUpdated=null,lastUsers=[],demo=false;let lastLocalEdit=0;
+const yes=k=>String(state[k])==='true';const num=(k,min,max)=>Math.max(min,Math.min(max,Number(state[k])||0));
+function applyStyle(){document.body.style.fontFamily=['Arial','Montserrat','Figtree','Georgia','Verdana','system-ui'].includes(state.font)?state.font+',sans-serif':'Arial,sans-serif';document.querySelector('.rank-list').style.gap=num('lineSpacing',0,80)+'px';renderRank(lastUsers)}
+function escapeHtml(x){const e=document.createElement('span');e.textContent=String(x??'');return e.innerHTML}
+function renderRank(users){lastUsers=users||[];const list=document.getElementById('rankList');if(!lastUsers.length){list.innerHTML='<div class="empty">Aguardando curtidas...</div>';return}
+const n=Math.max(1,Math.min(10,parseInt(state.topN)||10));list.innerHTML=lastUsers.slice(0,n).map((u,i)=>{
+const pos=i+1,decoration=pos===1&&yes('showCrown')?' 👑':pos<=3&&yes('showTrophy')?' 🏆':'';const rank=pos+'.'+decoration;
+const badge=yes('showPosition')?`<span class="rank-badge" style="color:${safeColor(state.rankColor)}">${rank}</span>`:'';
+const avatar=yes('showAvatar')?(u.avatar?`<img class="avatar" src="${escapeHtml(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.style.display=\'none\';this.insertAdjacentHTML(\'afterend\',\'<span class=&quot;avatar avatar-fallback&quot;>👤</span>\')">`:'<span class="avatar"></span>'):'';
+const shadow=yes('showShadow')?`2px 3px 5px ${safeColor(state.shadowColor)},0 0 12px ${safeColor(state.shadowColor)}`:'none';
+const stroke=yes('showBorder')?`-webkit-text-stroke:1.5px ${safeColor(state.borderColor)};paint-order:stroke fill;`:'';
+const effect=['aurora','neon','rainbow','glow'].includes(state.textEffect)?state.textEffect:'';
+const name=`<span class="name ${effect}" style="color:${safeColor(state.nameColor)};font-size:${num('nameSize',12,100)}px;letter-spacing:${num('letterSpacing',-2,20)}px;text-shadow:${shadow};${stroke}">${escapeHtml(u.name||'Anônimo')}</span>`;
+const heart=yes('showHeart')?`<span class="heart ${yes('animateHeart')?'animated':''}">♥</span>`:'';
+const count=yes('showLikes')?`<span class="count" style="color:${safeColor(state.countColor)};font-size:${Math.max(12,num('nameSize',12,100)*.8)}px;text-shadow:${shadow}">${heart}${Number(u.likes||0).toLocaleString('pt-BR')}</span>`:'';
+return `<div class="rank-item ${yes('rightToLeft')?'rtl':''}">${badge}${avatar}<div class="info">${name}${count}</div></div>`}).join('')}
+function safeColor(x){return /^#[0-9a-fA-F]{6}$/.test(String(x))?x:'#ffffff'}
+// Recebe também via armazenamento local: impede perda de alterações durante recarga da prévia.
+function readLocalPreview(){
+ if(!previewMode)return;
+ try{const saved=JSON.parse(localStorage.getItem('tikbom-ranking-preview')||'null');if(saved&&saved.params&&saved.ts>Date.now()-3600000){state={...state,...saved.params};lastLocalEdit=Date.now();applyStyle()}}catch(e){}
+}
+window.addEventListener('storage',e=>{if(previewMode&&e.key==='tikbom-ranking-preview')readLocalPreview()});
+window.addEventListener('message',e=>{if(e.origin!==location.origin||!e.data)return;if(e.data.type==='tiquebom-update'&&e.data.params){state={...state,...e.data.params};lastLocalEdit=Date.now();applyStyle()}if(e.data.type==='tiquebom-test-ranking'&&previewMode){demo=true;renderRank(demoUsers)}});
+let lastLiveUsers=[];let liveConnected=false;
+async function syncConfig(){if(!overlayId)return;try{const r=await fetch(`${API_URL}/overlay-config/${encodeURIComponent(overlayId)}`,{cache:'no-store'});if(r.ok){const d=await r.json();if(d.updated!==lastUpdated){lastUpdated=d.updated;if(Date.now()-lastLocalEdit>1600)state={...state,...d.params};applyStyle()}}}catch(e){console.warn('Erro de sincronização',e)}}
+async function poll(){
+  if(!username){if(previewMode&&!demo){demo=true;renderRank(demoUsers)};setTimeout(poll,2000);return}
+  try{
+    const r=await fetch(`${API_URL}/likers/${encodeURIComponent(username)}`,{cache:'no-store'});
+    if(!r.ok)throw Error('HTTP '+r.status);
+    const data=await r.json();
+    liveConnected=data.status==='connected';
+    lastLiveUsers=Array.isArray(data.likers)?data.likers:[];
+    // Em live conectada, exibir apenas curtidores reais, inclusive na previa.
+    // Offline, a demonstracao aparece somente no editor; nunca no OBS.
+    if(lastLiveUsers.length){demo=false;renderRank(lastLiveUsers)}else if(liveConnected){demo=false;renderRank([])}
+    else if(previewMode){demo=true;renderRank(demoUsers)}
+    else {demo=false;renderRank([])}
+  }catch(e){console.warn('Erro no ranking',e);if(previewMode){demo=true;renderRank(demoUsers)}}
+  setTimeout(poll,2000)
+}
+if(previewMode){demo=true;lastUsers=demoUsers;}applyStyle();readLocalPreview();syncConfig();setInterval(syncConfig,750);poll();
+</script></body></html>

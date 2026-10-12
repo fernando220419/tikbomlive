@@ -1,0 +1,15 @@
+TIQUE BOM - Pasta de arquivos para testar localmente
+
+Arquivos:
+- tique-bom-integrated.html -> painel principal, abra este no navegador
+- overlay-likers.html -> overlay de ranking de quem mais curtiu
+- overlay-likes.html -> overlay de coracoes voando
+
+Como testar:
+1. Coloque estes 3 arquivos na mesma pasta
+2. Rode seu backend Python (Flask) na porta 5000
+3. Abra tique-bom-integrated.html no navegador
+4. Digite o username do TikTok e clique em Conectar
+
+Observacao: o backend precisa ter o endpoint /api/likers/<username>
+retornando a lista ordenada de quem mais curtiu, para o overlay-likers.html funcionar.
